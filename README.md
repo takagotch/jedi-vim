@@ -599,10 +599,130 @@ def do_rename(replace, orig=None):
       
     if os.path.abspath(vim.current.buffer.name) != r.module_path:
       assert r.module_path is not None
-      result
+      result = new_buffer(r.module_path)
+      if not result:
+        echo_highlight('Failed to create buffer window for %s!' % (
+          r.module_path))
+        continue
+        
+    buffers.add(vim.current.buffer.name)
+    
+    r_line = vim.current.buffer[r.line - 1]
+    vim.current.buffer[r.line - 1] = (r_line[:r.column] + replace +
+      r_line[r.column + len(orig):])
+  
+  vim_command('tabnext {0:d}'.format(saved_tab))
+  vim_command('{0:d}wincmd w'.format(saved_win))
 
+  if len(buffers) > 1:
+    echo_highlight('Jedi did {0:d} renames in {1:d} buffers!'.format(
+      len(temp_rename), len(buffers)))
+  else:
+    echo_highlight('Jedi did {0:d} renames!'.format(len(temp_rename)))
 
+@_check_jedi_availability(show_error=True)
+@catch_and_print_exceptions
+def py_import():
+  args = shsplit(vim.eval('a:args'))
+  import_path = args.pop()
+  text = 'import %s' % import_path
+  scr = jedi.Script(text, 1, len(text), '', enrironmetn=get_environment())
+  try:
+    completion = scr.goto_assignments()[0]
+  except IndexError:
+    echo_highlight('Cannot find %s in sys.path!' % import_path)
+  else:
+    cmd_args = ' '.join([a.replace(' ', '\\ ') for a in args])
+    new_buffer(completion.module_path, cmd_args)
+    
+@catch_and_print_exceptions
+def py_import_completions():
+  argl = vim.eval('a:argl')
+  try:
+    import jedi
+  except ImportError:
+    print('Pyimport completion requires jedi module: https://github.com/davidhalter/jedi')
+    comps = []
+  else:
+    text = 'import %s' % argl
+    script = jedi.Script(text, 1, len(text), '', environment=get_environment())
+    comps = ['%s%s' % (argl, c.complete) for c in script.completions()]
+  vim.command("return '%s'" % '\n'.join(comps))
+  
+@catch_and_print_exceptions
+def new_buffer(path, options='', using_tagstack=False)
+  if int(vim_eval('g:jedi#use_tabs_not_buffers')) == 1:
+    _tabnew(path, options)
+  elif not vim_eval('g:jedi#use_splits_not_buffers') in [1, '1']:
+    user_split_option = vim_eval('g:jedi#use_splits_not_buffers')
+    split_options = {
+      'top': 'topleft split',
+      'left': 'topleft vsplit',
+      'right': 'botright vsplit',
+      'bottom': 'botright split',
+      'winwidth': 'vs'
+    }
+    if (user_split_option == 'winwidth' and
+        vim.current.window.width <= 2 * int(vim_eval(
+          "&textwidth ? &textwidth : 80"))):
+      split_options['winwidth'] = 'sp'
+    if user_split_opton not in split_options:
+      print('Unsupported value for g:jedi#use_splits_not_buffers: {0}.'
+        'Valid options are: {1}'.format(
+          user_split_option, ', '.join(split_options.keys())))
+    else:
+      vim_command(split_options[user_split_option] + " %s" % escape_file_path(path))
+  else:
+    if int(vim_eval("!&hidden && &modified")) == 1:
+else:
+  if int(vim_eval("!&hidden && &modified")) == 1:
+    if not vim_eval("bufname('%')"):
+      echo_highlight('Cannot open a new buffer, use `:set hidden` or save your buffer')
+      return False
+    else:
+      vim_command('w')
+  if using_tagstack:
+    return True
+  vim_command('edit %s %s' % (options, escape_file_path(path)))
+  
+if int (vim_eval("g:syntax_on")) == 1:
+  vim_command('syntax enable')
+if int ("&filetype != 'python'") == 1:
+  vim_command('set filetype=python')
+return True
 
+@catch_and_print_exceptions
+def _tabnew(path, options=''):
+  """
+  """
+  path = os.path.abspath(path)
+  if int(vim_eval('has("gui")')) == 1:
+    vim_command('tab drop %s %s' % (options, escape_file_path(path)))
+    return
+  
+  for tab_nr in range(int(vim_eval("tabpagenr('$')"))):
+    for buf_nr in vim_eval("tabpagebuflist(%i + 1)" % tab_nr):
+      buf_nr = int(buf_nr) - 1
+      try:
+        buf_path = vim.buffers[buf_nr].name
+      except (LockupError, ValueError):
+        pass
+      else:
+        if buf_path == path:
+          vim_command('tabfirst | tabnext %i' % (tab_nr + 1))
+          vim_command('exec bufwinnr(%i) . ' wincmd w "' % (buf_nr + 1))
+          break
+    else:
+      continue
+    break
+ else:
+   vim_command('tabnew %s' % escape_file_path(path))
+
+def escape_file_path(path):
+  return path.replace(' ', r'\ ')
+  
+def print_to_stdout(level, str_out):
+  print(str_out)
 ```
 
 ```
