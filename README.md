@@ -106,6 +106,45 @@ finally:
   sys.path.remove(jedi_path)
   sys.path.remove(parso_path)
 
+def catch_and_print_exceptoins(func):
+  def wrapper(*args, **kwargs):
+    try:
+      return func(*args, **kwargs)
+    except (Exception, vim.error):
+      print(traceback.format_exc())
+      return None
+  return wrapper
+
+def _check_jedi_availability(show_error=False):
+  def func_receiver(func):
+    def wrapper(*args, **kwargs):
+      if jedi is None:
+        if show_error:
+          no_jedi_warning()
+        return
+      else:
+        return func(*args, **kwargs)
+    return wrapper
+  return func_receiver
+  
+current_environment = (None, None)
+
+def get_environment(use_cache=True):
+  global current_environment
+  
+  vim_force_python_version = vim_eval("g:jedi#force_py_version")
+  if use_cache and vim_force_python_version == current_environment[0]:
+    return current_environment[1]
+    
+  environment = None
+  if vim_force_python_version == "auto":
+
+
+
+
+
+
+
 
 
 
