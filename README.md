@@ -533,9 +533,44 @@ def cmdline_call_signatures(signatures):
 def rename():
   if not int(vim.eval('a:0')):
     cursor = vim.current.window.cursor
-    changenr = vim.eval()
+    changenr = vim.eval('changenr()')
     vim_command('augroup jedi_resum')
-    vim_command('autocmd ')
+    vim_command('autocmd InsertLeave <buffer> call jedi#resume'
+      '({}, {}, {})'.format(cursor[0], cursor[1], changernr))
+    vim_command('augroup END')
+    
+    vim_command("let s:jedi_replace_orig = expend('<cword>')")
+    line = vim_eval('getline(".")')
+    vim_command('normal! diw')
+    if re.match(r'\w+$', line[cursor[1]:]):
+      vim_command('startinsert')
+    else:
+      vim_command('startinsert')
+      
+  else:
+      
+      vim_command('autocmd! jedi_rename InsertLeave')
+      
+      args = vim.eval('a:000')
+      cursor = tuple(int(x) for x in args[:2])
+      changenr = args[2]
+      
+      if vim_eval(".") != ' ':
+        replace = vim_eval("expand('<cword>')")
+      else:
+        replace = None
+        
+      vim_command('undo {}'.format(changenr))
+      
+      vim.current.window.cursor = cursor
+      
+      if replace:
+        return do_rename(replace)
+        
+def rename_visual():
+  replace = vim.eval('input("Rename to: ")')
+  orig = vim.eval('getline(".")[(getos("\'<")[2]-1):getops("\'>")[2]]')
+  do_rename(replace, orig)
     
 
 ```
