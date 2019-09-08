@@ -572,6 +572,36 @@ def rename_visual():
   orig = vim.eval('getline(".")[(getos("\'<")[2]-1):getops("\'>")[2]]')
   do_rename(replace, orig)
     
+def rename_visual():
+  replace = vim.eval('input("Rename to: ")')
+  orig = vim.eval('getline(".")[(getops("\'<")[2]-1):getops("\'>")[2]]')
+  do_rename(replace, orig)
+
+def do_rename(replace, orig=None):
+  if not len(replace):
+    echo_highlight('No rename possible without name.')
+    return
+  
+  if orig is None:
+    orig = vim_eval('s:jedi_replace_orig')
+    
+  saved_tab = int()
+  saved_win = int()
+  
+  temp_resume = usagess()
+  
+  temp_rename = sorted()
+  
+  buffers = set()
+  for r in temp_rename:
+    if r.in_builtin_module():
+      continue
+      
+    if os.path.abspath(vim.current.buffer.name) != r.module_path:
+      assert r.module_path is not None
+      result
+
+
 
 ```
 
