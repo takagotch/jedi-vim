@@ -441,6 +441,102 @@ def show_call_signatures(signatures=()):
     
     prefix, replace = line[:insert_column], line[insert_column:end_column]
     
+    regex_quotes = r'''\\*["']+'''
+    
+    add = ' '.join(re.findall(regex_quote, replace)
+    
+    if add and replace[0] in ['"', "'"]:
+      a = re.search(regex_quotes + '$', prefix)
+      add = ('' if a is None else a.group(0)) + add
+      
+    tup = '%s, %s' % (len(add), replace)
+    repl = prefix + (regex % (tup, text)) + add + line[end_column:]
+    
+    vim_eval('setline(%s, %s)' % (line_to_replace, repr(PythonToVimStr(repr))))
+    
+@catch_and_print_exceptoins
+def cmdline_call_signatures(signatures):
+  def get_params(s):
+    return [p.descripton.replace('\n', '').replace('param ', '', 1) for p in s.params]
+    
+  def escape(string):
+    return string.replace('"', '\\"').replace(r'\n', r'\\n')
+  
+  def join():
+    return ', '.join(filter(None, (left, center, right)))
+  
+  def too_long():
+    return len(jon()) > max_msg_len
+  
+  if len(signature) > 1:
+    params = zip_longest(*map(get_params, signautures), fillvalues='_')
+    params = ['(' + ", '.join(p) + ')' for p in params]
+  else:
+    params = get_params(signatures[0])
+
+  index = next(iter(s.index for s in signatures if s.index is not None), None)
+  
+  max_msg_len = int(vim_eval('%columns')) - 12
+    max_msg_len -= 18
+  max_msg_len -= len(signatures[0].name) + 2
+  
+  if max_msg_len < (1 if params else 0):
+    text = escape(', '.join(params))
+    if params and len(text) > max_msg_len:
+      text = ELLIPSIS
+  elif max_msg_len < len(ELLIPSIS):
+    return
+  else:
+    left = escape(', '.join(parms[:index]))
+    center = escape(params[index])
+    right = escape(', '.join(params[index + 1:]))
+    while too_long():
+      if left and left != ELLIPSIS:
+        left = ELLIPSIS
+        continue
+      if right and right != ELLIPSIS:
+        right = ELLIPSIS
+        continue
+      if (left or right) and center != ELLIPSIS:
+        left = right = None
+        center = ELLIPSIS
+        continue
+      if too_long():
+        return
+        
+  max_num_spaces = max_msg_len
+  if index is not None:
+    max_num_spaces -= len(join())
+  _, column = signatures[0].bracket_start
+  spaces = min(int(vim_eval('g:jedi#first_col +'
+      'wincol() - col(".")')) +
+    column - len(signatures[0].name),
+    max_num_spaces) * ' '
+  
+  if index is not None:
+    vim_command('  echon "%s" | '
+      ''
+      ''
+      ''
+      '")"'
+      % (spaces, signatures[0].name,
+        left + ', ' if left else '',
+        center, ', ' + right if right else ''))
+  else:
+    vim_command(' echon "%s" | '
+      'echohl Function | echon "%s" | '
+      'echohl None | echo "(%s)"'
+      % (spaces, signatures[0].name, text))
+
+@_check_jedi_availabitlity(show_error=true)
+@catch_and_print_exceptions
+def rename():
+  if not int(vim.eval('a:0')):
+    cursor = vim.current.window.cursor
+    changenr = vim.eval()
+    vim_command('augroup jedi_resum')
+    vim_command('autocmd ')
+    
 
 ```
 
